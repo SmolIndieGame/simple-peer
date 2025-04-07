@@ -1,1 +1,47 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-darker text-lighter min-h-screen;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-dark;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary rounded-full;
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md transition-all duration-200 font-medium;
+  }
+
+  .btn-primary {
+    @apply bg-primary hover:bg-secondary text-white shadow-neon hover:shadow-lg;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white;
+  }
+
+  .input {
+    @apply bg-dark border border-light/20 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-lighter transition-all duration-200;
+  }
+
+  .card {
+    @apply bg-dark rounded-lg border border-light/10 shadow-md p-4;
+  }
+}

@@ -1,54 +1,95 @@
-# React + TypeScript + Vite
+> **⚠️ Under Development**  
+> This project is currently under active development. Features may change, and bugs may exist. Contributions and feedback are welcome!
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Simple Peer - Secure P2P Chat
 
-Currently, two official plugins are available:
+A secure peer-to-peer chat application built with React, TypeScript, and Peer.js. This application allows users to connect directly to each other for real-time messaging without storing any data on servers.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+- **Secure P2P Communication**: Direct peer-to-peer connections using WebRTC
+- **No Server Storage**: All data is stored locally, ensuring privacy
+- **User Identification**: Persistent user IDs and customizable usernames
+- **Recent Connections**: List of previously connected peers for easy reconnection
+- **Real-time Messaging**: Instant message delivery between connected peers
+- **Responsive Design**: Works on desktop and mobile devices
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Privacy & Security
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+Simple Peer is designed with privacy in mind:
+
+- No messages are stored on any server
+- All communication happens directly between peers
+- User data is stored only in your browser's localStorage
+- Chat history is not persisted after the session ends
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v16 or higher)
+- pnpm, npm, or yarn package manager
+
+### Installation
+
+1. Install dependencies:
+
+   ```bash
+   pnpm install
+   ```
+
+2. Create a `.env.local` file in the root directory with:
+
+   ```
+   VITE_APP_GUID=your-app-guid
+   ```
+
+   This GUID is used to namespace peer IDs.
+
+3. Start the development server:
+
+   ```bash
+   pnpm run dev
+   ```
+
+4. Open your browser and navigate to http://localhost:5173
+
+### Building for Production
+
+```bash
+pnpm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The built files will be in the `dist` directory and can be served using any static file server.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## How to Use
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+1. **Set Your Name**: Enter your name in the input field
+2. **Connect to a Peer**:
+   - Enter the peer ID of the person you want to chat with, or
+   - Select from your list of recent connections
+3. **Chat**: Once connected, you can send messages in real-time
+4. **Disconnect**: Click the "Disconnect" button to end the chat session
+
+## Technologies Used
+
+- **React.js**: Frontend framework
+- **TypeScript**: Type-safe JavaScript
+- **Peer.js**: WebRTC peer-to-peer connection library
+- **Vite**: Fast bundler and development server
+- **Tailwind CSS**: Utility-first CSS framework
+
+## Browser Compatibility
+
+Simple Peer works on modern browsers that support WebRTC:
+
+- Chrome
+- Firefox
+- Safari
+- Edge
+
+Mobile browser support may vary.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
