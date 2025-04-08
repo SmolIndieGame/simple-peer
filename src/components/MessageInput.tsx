@@ -2,9 +2,13 @@ import React, { useState, useRef, useEffect } from "react";
 
 interface MessageInputProps {
   onSendMessage: (message: string) => void;
+  onSendFile?: (file: File, data: ArrayBuffer) => void;
 }
 
-const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => {
+const MessageInput: React.FC<MessageInputProps> = ({
+  onSendMessage,
+  onSendFile,
+}) => {
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -33,6 +37,19 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => {
 
   return (
     <div className="relative">
+      <input
+        type="file"
+        id="fileInput"
+        className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (file && onSendFile) {
+            const arrayBuffer = await file.arrayBuffer();
+            onSendFile(file, arrayBuffer);
+            e.target.value = ""; // reset input
+          }
+        }}
+      />
       <div className="flex items-end border border-light/20 rounded-lg bg-dark overflow-hidden focus-within:ring-2 focus-within:ring-primary/50 transition-all">
         <textarea
           ref={textareaRef}
@@ -65,6 +82,30 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => {
               strokeLinejoin="round"
               strokeWidth={2}
               d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+            />
+          </svg>
+        </button>
+        <button
+          onClick={() => {
+            const fileInput = document.getElementById(
+              "fileInput"
+            ) as HTMLInputElement;
+            fileInput?.click();
+          }}
+          className="p-3 text-primary hover:text-white hover:bg-primary transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M4 12l1.5-1.5M4 8l4-4m0 0l4 4m-4-4v12"
             />
           </svg>
         </button>

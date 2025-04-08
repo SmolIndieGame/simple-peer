@@ -1,33 +1,46 @@
 import React, { useState, useEffect } from "react";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
-import { DataConnection } from "peerjs";
 import { PeerMessage } from "../types/PeerMessage";
+import type { ChatMessage } from "../types/ComponentTypes";
+import { DataConnection } from "peerjs";
 
-interface ChatProps {
+export interface ChatProps {
   conn: DataConnection;
   peerId: string;
 }
 
-interface ChatMessage {
-  id: string;
-  text: string;
-  isSent: boolean;
-  timestamp: Date;
-}
+const CHUNK_SIZE = 1024 * 1024; // 1MB
 
 const Chat: React.FC<ChatProps> = ({ conn }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState<boolean>(conn?.open ?? false);
 
-  useEffect(() => {
-    if (conn) {
-      const handleData = (data: unknown) => {
-        const message = data as PeerMessage;
-        if (!message || message.type !== "textMessage") return;
+  // Buffer for incoming file chunks
+  const fileBuffers = React.useRef<
+    Record<
+      string,
+      {
+        chunks: ArrayBuffer[];
+        received: number;
+        totalSize: number;
+        totalChunks: number;
+        filename: string;
+        filetype: string;
+      }
+    >
+  >({});
 
-        setMessages((prevMessages) => [
-          ...prevMessages,
+  useEffect(() => {
+    if (!conn) return;
+
+    const handleData = (data: unknown) => {
+      const message = data as PeerMessage;
+      if (!message) return;
+
+      if (message.type === "textMessage") {
+        setMessages((prev) => [
+          ...prev,
           {
             id: `msg-${Date.now()}-${Math.random()
               .toString(36)
@@ -37,52 +50,199 @@ const Chat: React.FC<ChatProps> = ({ conn }) => {
             timestamp: new Date(),
           },
         ]);
-      };
+      } else if (message.type === "file") {
+        // Legacy full file transfer
+        const blob = new Blob([message.data], { type: message.filetype });
+        const url = URL.createObjectURL(blob);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `file-${Date.now()}-${Math.random()
+              .toString(36)
+              .substring(2, 9)}`,
+            fileUrl: url,
+            filename: message.filename,
+            isSent: false,
+            timestamp: new Date(),
+            progress: 1,
+            isComplete: true,
+          },
+        ]);
+      } else if (message.type === "fileChunk") {
+        const {
+          fileId,
+          filename,
+          filetype,
+          totalSize,
+          chunkIndex,
+          totalChunks,
+          data: chunkData,
+        } = message;
 
-      const handleOpen = () => {
-        setIsConnected(true);
-      };
+        if (!fileBuffers.current[fileId]) {
+          fileBuffers.current[fileId] = {
+            chunks: [],
+            received: 0,
+            totalSize,
+            totalChunks,
+            filename,
+            filetype,
+          };
 
-      const handleClose = () => {
-        setIsConnected(false);
-      };
+          // Create initial message with 0 progress
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: fileId,
+              filename,
+              isSent: false,
+              timestamp: new Date(),
+              progress: 0,
+              isComplete: false,
+              fileId,
+            },
+          ]);
+        }
 
-      conn.on("data", handleData);
-      conn.on("open", handleOpen);
-      conn.on("close", handleClose);
+        const buffer = fileBuffers.current[fileId];
+        buffer.chunks[chunkIndex] = chunkData;
+        buffer.received++;
 
-      return () => {
-        conn.off("data", handleData);
-        conn.off("open", handleOpen);
-        conn.off("close", handleClose);
-      };
-    }
+        const progress = buffer.received / buffer.totalChunks;
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.fileId === fileId
+              ? { ...msg, progress, isComplete: progress === 1 }
+              : msg
+          )
+        );
+
+        if (buffer.received === buffer.totalChunks) {
+          const blob = new Blob(buffer.chunks, { type: buffer.filetype });
+          const url = URL.createObjectURL(blob);
+
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.fileId === fileId
+                ? { ...msg, fileUrl: url, progress: 1, isComplete: true }
+                : msg
+            )
+          );
+
+          delete fileBuffers.current[fileId];
+        }
+      }
+    };
+
+    const handleOpen = () => setIsConnected(true);
+    const handleClose = () => setIsConnected(false);
+
+    conn.on("data", handleData);
+    conn.on("open", handleOpen);
+    conn.on("close", handleClose);
+
+    return () => {
+      conn.off("data", handleData);
+      conn.off("open", handleOpen);
+      conn.off("close", handleClose);
+    };
   }, [conn]);
 
   const handleSendMessage = (message: string) => {
-    if (isConnected && conn) {
-      conn.send({ type: "textMessage", message } satisfies PeerMessage);
+    if (!isConnected || !conn) return;
 
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-          text: message,
-          isSent: true,
-          timestamp: new Date(),
-        },
-      ]);
+    conn.send({ type: "textMessage", message } satisfies PeerMessage);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        text: message,
+        isSent: true,
+        timestamp: new Date(),
+      },
+    ]);
+  };
+
+  const handleSendFile = async (file: File, data: ArrayBuffer) => {
+    if (!isConnected || !conn) return;
+
+    const totalSize = data.byteLength;
+    const totalChunks = Math.ceil(totalSize / CHUNK_SIZE);
+    const fileId = `file-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 9)}`;
+
+    // Add message with 0 progress
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: fileId,
+        filename: file.name,
+        isSent: true,
+        timestamp: new Date(),
+        progress: 0,
+        isComplete: false,
+        fileId,
+      },
+    ]);
+
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, totalSize);
+      const chunkData = data.slice(start, end);
+
+      const chunkMessage = {
+        type: "fileChunk",
+        fileId,
+        filename: file.name,
+        filetype: file.type,
+        totalSize,
+        chunkIndex: i,
+        totalChunks,
+        data: chunkData,
+      } satisfies PeerMessage;
+
+      await conn.send(chunkMessage);
+
+      // Update progress after each chunk
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.fileId === fileId
+            ? {
+                ...msg,
+                progress: (i + 1) / totalChunks,
+                isComplete: i + 1 === totalChunks,
+              }
+            : msg
+        )
+      );
     }
+
+    // Show the file after sending finished
+    const blob = new Blob([data], { type: file.type });
+    const url = URL.createObjectURL(blob);
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.fileId === fileId
+          ? { ...msg, fileUrl: url, progress: 1, isComplete: true }
+          : msg
+      )
+    );
   };
 
   return (
-    <div className="flex flex-col flex-1">
+    <div className="flex flex-col flex-1 overflow-hidden">
       <div className="flex-1 overflow-y-auto mb-4">
         <MessageList messages={messages} />
       </div>
       {isConnected ? (
         <div className="bg-dark/80 backdrop-blur-sm pt-2">
-          <MessageInput onSendMessage={handleSendMessage} />
+          <MessageInput
+            onSendMessage={handleSendMessage}
+            onSendFile={handleSendFile}
+          />
         </div>
       ) : (
         <div className="p-4 text-center text-red-400 border border-red-500/30 rounded-md">

@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from "react";
-
-interface Peer {
-  id: string;
-  name: string;
-}
+import type { Peer } from "../types/ComponentTypes";
 
 interface PeerListProps {
   onPeerSelect: (peer: Peer) => void;
