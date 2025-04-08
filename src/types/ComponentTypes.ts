@@ -1,3 +1,11 @@
+export enum ConnectionStatus {
+  Initializing = "Initializing...",
+  Waiting = "Waiting for connection...",
+  Connecting = "Connecting...",
+  Connected = "Connected",
+  Disconnected = "Disconnected",
+}
+
 export interface ChatMessage {
   id: string;
   text?: string;

@@ -3,7 +3,8 @@ import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import { PeerMessage } from "../types/PeerMessage";
 import type { ChatMessage } from "../types/ComponentTypes";
-import { DataConnection } from "peerjs";
+import { DataConnection, PeerError } from "peerjs";
+import { toast } from "react-hot-toast";
 
 export interface ChatProps {
   conn: DataConnection;
@@ -138,14 +139,29 @@ const Chat: React.FC<ChatProps> = ({ conn }) => {
     const handleOpen = () => setIsConnected(true);
     const handleClose = () => setIsConnected(false);
 
+    const handleError = (err: PeerError<string>) => {
+      toast.error(`Peer Error: ${err.type}`);
+      setIsConnected(false);
+    };
+
+    const handleStateChanged = (state: RTCIceConnectionState) => {
+      if (state !== "disconnected") return;
+
+      setIsConnected(false);
+    };
+
     conn.on("data", handleData);
     conn.on("open", handleOpen);
     conn.on("close", handleClose);
+    conn.on("error", handleError);
+    conn.on("iceStateChanged", handleStateChanged);
 
     return () => {
       conn.off("data", handleData);
       conn.off("open", handleOpen);
       conn.off("close", handleClose);
+      conn.off("error", handleError);
+      conn.off("iceStateChanged", handleStateChanged);
     };
   }, [conn]);
 

@@ -1,4 +1,5 @@
-import ChatInterface from "./components/ChatInterface";
+import { Toaster } from "react-hot-toast";
+import PeerChatManager from "./components/PeerChatManager";
 
 function App() {
   return (
@@ -14,12 +15,13 @@ function App() {
           </div>
         </header>
         <main className="flex flex-col overflow-hidden flex-1 card animate-fade-in">
-          <ChatInterface />
+          <PeerChatManager />
         </main>
         <footer className="mt-6 text-center text-xs text-light/60">
           <p>Secure P2P Chat • No server storage • End-to-end encryption</p>
         </footer>
       </div>
+      <Toaster />
     </div>
   );
 }
