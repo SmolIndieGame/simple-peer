@@ -19,7 +19,7 @@ const PeerChatManager = () => {
   const [remoteUserName, setRemoteUserName] = useState("");
   const [remoteUserId, setRemoteUserId] = useState("");
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(
-    ConnectionStatus.Initializing
+    ConnectionStatus.Initializing,
   );
   const [peer, setPeer] = useState<Peer | null>(null);
   const [conn, setConn] = useState<DataConnection | null>(null);
@@ -43,9 +43,10 @@ const PeerChatManager = () => {
   const setupConnection = (connection: DataConnection, remoteId: string) => {
     setConn(connection);
     setRemoteUserId(remoteId);
-    setConnectionStatus(ConnectionStatus.Connected);
+    setConnectionStatus(ConnectionStatus.Connecting);
 
     connection.on("open", () => {
+      setConnectionStatus(ConnectionStatus.Connected);
       if (userName) {
         connection.send({
           type: "userName",
@@ -65,7 +66,10 @@ const PeerChatManager = () => {
 
   useEffect(() => {
     if (!userId) return;
-    const newPeer = new Peer(userIdToPeerId(userId), { secure: true });
+    const newPeer = new Peer(userIdToPeerId(userId), {
+      debug: import.meta.env.DEV ? 3 : 0,
+      secure: true,
+    });
     setPeer(newPeer);
     setConnectionStatus(ConnectionStatus.Initializing);
 
@@ -94,11 +98,11 @@ const PeerChatManager = () => {
   const connectToPeer = (otherUserId?: string) => {
     if (peer && otherUserId) {
       const connection = peer.connect(userIdToPeerId(otherUserId));
-      setConnectionStatus(ConnectionStatus.Connecting);
+      setupConnection(connection, otherUserId);
+      // setConnectionStatus(ConnectionStatus.Connecting);
 
-      connection.on("open", () => {
-        setupConnection(connection, otherUserId);
-      });
+      // connection.on("open", () => {
+      // });
 
       // connection.on("error", () => {
       //   toast.error(`Connection Error`);
@@ -110,7 +114,7 @@ const PeerChatManager = () => {
   const closeConnection = (connection: DataConnection | null) => {
     connection?.close();
     setConn(null);
-    setRemoteUserId("");
+    // setRemoteUserId("");
     setRemoteUserName("");
     setConnectionStatus(ConnectionStatus.Waiting);
   };
