@@ -107,7 +107,7 @@ const PeerChatManager = () => {
      try {
       await newPeer.disconnect();
       newPeer.reconnect();
-     } catch(err) {
+     } catch(err: any) {
       toast.error("Reconnect error: " + err.message);
      }
     });
