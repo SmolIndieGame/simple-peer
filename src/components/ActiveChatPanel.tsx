@@ -20,7 +20,7 @@ const ActiveChatPanel: React.FC<Props> = ({
   return (
     <div className="flex flex-col overflow-hidden flex-1">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center">
+        <div className="flex items-center xs:flex-col">
           <span className="font-medium">
             {remoteUserName ? remoteUserName : "Anonymous"}
           </span>
