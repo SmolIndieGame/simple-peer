@@ -93,7 +93,7 @@ const PeerChatManager = () => {
       setupConnection(connection, newPeerId);
     });
 
-    newPeer.on("error", (err) => {
+    newPeer.on("error", async (err) => {
       toast.error(`Connection Error: ${err.type}`);
       closeConnection(conn);
       if (err.type === "webrtc" || err.type === "peer-unavailable") return;
@@ -104,7 +104,12 @@ const PeerChatManager = () => {
       }
 
       setConnectionStatus(ConnectionStatus.Initializing);
+     try {
+      await newPeer.disconnect();
       newPeer.reconnect();
+     catch(err) {
+      toast.error("Reconnect error: " + err.message);
+     }
     });
 
     return () => {
